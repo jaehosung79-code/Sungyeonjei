@@ -18,21 +18,35 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-    body { font-family:sans-serif; padding:15px; background:#f2f2f2; }
-    h2 { text-align:center; }
+body { font-family:sans-serif; padding:15px; background:#f2f2f2; }
+h2 { text-align:center; }
 
-    .container { background:white; padding:15px; border-radius:10px; box-shadow:0 2px 5px rgba(0,0,0,0.15); margin-bottom:15px; }
+.container { background:white; padding:15px; border-radius:10px; box-shadow:0 2px 5px rgba(0,0,0,0.15); margin-bottom:15px; }
 
-    .save-btn, .chart-btn { width:100%; margin-top:15px; padding:12px; font-size:16px; border:none; border-radius:8px; cursor:pointer; }
-    .save-btn { background:#2a7bff; color:white; }
-    .chart-btn { background:#28a745; color:white; }
+.save-btn, .chart-btn { width:100%; margin-top:15px; padding:12px; font-size:16px; border:none; border-radius:8px; cursor:pointer; }
+.save-btn { background:#2a7bff; color:white; }
+.chart-btn { background:#28a745; color:white; }
 
-    table { width:100%; border-collapse:collapse; margin-top:10px; }
-    th, td { border:1px solid #ccc; padding:8px; text-align:center; }
-    th { background:#444; color:white; }
+table {
+    width: 100%;
+    border-collapse: separate; /* 둥근 모서리 위해 separate */
+    border-spacing: 0;
+    margin-top: 10px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    overflow: hidden;
+}
 
-    .saved-item { padding:10px; border-bottom:1px solid #ddd; cursor:pointer; }
-    #chartContainer { display:none; padding:15px; background:white; margin-top:15px; border-radius:10px; }
+th, td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    text-align: center;
+}
+
+th { background:#444; color:white; }
+
+.saved-item { padding:10px; border-bottom:1px solid #ddd; cursor:pointer; }
+#chartContainer { display:none; padding:15px; background:white; margin-top:15px; border-radius:10px; }
 </style>
 </head>
 <body>
@@ -51,8 +65,8 @@
             <tr><td>코어</td><td><input type="checkbox" data-name="core1"></td><td><input type="checkbox" data-name="core2"></td><td><input type="checkbox" data-name="core3"></td></tr>
             <tr><td>푸쉬업</td><td><input type="checkbox" data-name="push1"></td><td><input type="checkbox" data-name="push2"></td><td><input type="checkbox" data-name="push3"></td></tr>
             <tr><td>몸통 돌리기</td><td><input type="checkbox" data-name="bat1"></td><td><input type="checkbox" data-name="bat2"></td><td><input type="checkbox" data-name="bat3"></td></tr>
-            <tr><td>악력기</td><td colspan="3">L<input type="checkbox" data-name="gripL"> R<input type="checkbox" data-name="gripR"></td></tr>
-            <tr><td>몸통2</td><td><input type="checkbox" data-name="bat2_1"></td><td><input type="checkbox" data-name="bat2_2"></td><td><input type="checkbox" data-name="bat2_3"></td></tr>
+            <tr><td>악력기</td><td><input type="checkbox" data-name="gripL"></td><td><input type="checkbox" data-name="gripR"></td><td></td></tr>
+            <tr><td>고무줄 튜빙</td><td><input type="checkbox" data-name="tubing1"></td><td><input type="checkbox" data-name="tubing2"></td><td><input type="checkbox" data-name="tubing3"></td></tr>
         </tbody>
     </table>
 
@@ -132,14 +146,15 @@ function drawGraph(date) {
     if (!raw) return alert("저장된 데이터 없음");
 
     const d = JSON.parse(raw);
-    const labels = ["보강","코어","푸쉬업","몸통1","악력","몸통2"];
+    const labels = ["보강","코어","푸쉬업","몸통1","악력L","악력R","고무줄 튜빙"];
     const values = [
         (d.bo1?1:0)+(d.bo2?1:0)+(d.bo3?1:0),
         (d.core1?1:0)+(d.core2?1:0)+(d.core3?1:0),
         (d.push1?1:0)+(d.push2?1:0)+(d.push3?1:0),
         (d.bat1?1:0)+(d.bat2?1:0)+(d.bat3?1:0),
-        (d.gripL?1:0)+(d.gripR?1:0),
-        (d.bat2_1?1:0)+(d.bat2_2?1:0)+(d.bat2_3?1:0)
+        (d.gripL?1:0),
+        (d.gripR?1:0),
+        (d.tubing1?1:0)+(d.tubing2?1:0)+(d.tubing3?1:0)
     ];
 
     document.getElementById("chartContainer").style.display = "block";
@@ -155,11 +170,10 @@ function drawGraph(date) {
 
 // ---- PWA Service Worker 등록 ----
 if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("service-worker.js")
+    navigator.serviceWorker.register("./service-worker.js")
         .then(() => console.log("Service Worker 등록됨"))
         .catch(err => console.error("Service Worker 등록 실패", err));
 }
 </script>
 </body>
 </html>
-
