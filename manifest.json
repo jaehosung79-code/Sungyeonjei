@@ -1,7 +1,7 @@
 {
-  "name": "연제 운동 체크 앱",
+  "name": "운동 체크 앱",
   "short_name": "운동앱",
-  "start_url": "/index.html",
+  "start_url": "./",   // ← 절대 경로 대신 상대 경로로 수정
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#2a7bff",
@@ -11,4 +11,3 @@
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
   ]
 }
-
