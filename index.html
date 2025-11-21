@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>연제 운동 체크 앱</title>
+<style>
+body{font-family:sans-serif;margin:0;padding:5px;background:#000;color:#e0e0e0;}
+h2{text-align:center;color:#fff;margin:5px 0;font-size:1.2em;}
+.container{background:#1e1e1e;padding:5px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,0.5);margin-bottom:5px;}
+.save-btn{padding:5px 8px;font-size:0.9em;border:none;border-radius:6px;cursor:pointer;background:#2a7bff;color:white;width:100%;margin-top:5px;}
+.date-row{display:flex;align-items:center;gap:3px;margin-bottom:3px;flex-wrap:wrap;}
+.action-btn{border:none;border-radius:6px;cursor:pointer;font-size:0.6em;padding:2px 4px;flex:1;text-align:center;}
+.delete-btn{background:#d9534f;color:white;}
+.add-btn{background:#ff9800;color:white;}
+#exerciseContainer{max-height:300px;overflow-y:auto;}
+table{width:100%;border-collapse:separate;border-spacing:0;margin-top:3px;border:1px solid #555;border-radius:6px;overflow:hidden;font-size:0.7em;}
+th,td{border:1px solid #555;padding:3px;text-align:center;}
+th{background:#333;color:white;}
+tr{height:calc(1.3em*2);}
+input[type="checkbox"]{width:14px;height:14px;}
+footer{text-align:center;margin-top:5px;padding:2px;color:#888;font-size:0.7em;}
+
+/* 달력 */
+#calendar{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    gap:2px;
+    font-size:0.6em;
+    line-height:1.1;
+    margin-top:3px;
+}
+.calendar-weekday{text-align:center;font-weight:bold;padding:1px 0;font-size:0.6em;}
+.calendar-day{
+    padding:2px;
+    text-align:center;
+    background:#222;
+    border-radius:3px;
+    cursor:pointer;
+    border:1px solid transparent;
+    height: calc(1.3 * 1.5em);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+.calendar-day.today{border-color:rgb(240,128,128);}
+.calendar-day.selected{border-color:rgb(192,192,192);}
+.calendar-day:hover{background:#444;}
+
+#monthNav button{cursor:pointer;padding:2px 5px;border-radius:4px;font-size:0.6em;}
+#monthNav{display:flex;justify-content:space-between;margin-bottom:3px;font-size:0.6em;}
+
+/* 모달 */
+.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:1000;justify-content:center;align-items:center;}
+.modal{
+    background:#333;
+    color:white;
+    padding:10px;
+    border-radius:8px;
+    text-align:center;
+    min-width:150px;
+    box-shadow:0 4px 15px rgba(0,0,0,0.7);
+    font-size:0.6em; /* 달력 글씨 크기와 동일 */
+}
+.modal button{
+    margin-top:5px;
+    padding:3px 8px;
+    border:none;
+    border-radius:5px;
+    background:white;
+    color:#333;
+    cursor:pointer;
+    font-size:0.6em; /* 달력 글씨 크기와 동일 */
+}
+.modal input{
+    font-size:0.6em; /* 달력 글씨 크기와 동일 */
+    padding:2px;
+    width:80%;
+    margin-top:3px;
+}
+</style>
+</head>
+<body>
+
+<h2>연제 운동 체크 앱</h2>
+
+<div class="container">
+    <div id="monthNav">
+        <button id="prevMonthBtn">◀</button>
+        <span id="currentMonthText"></span>
+        <button id="nextMonthBtn">▶</button>
+    </div>
+    <div id="calendar"></div>
+</div>
+
+<div class="container">
+    <div class="date-row">
+        <button class="action-btn delete-btn" id="deleteBtn">🗑 삭제</button>
+        <button class="action-btn add-btn" id="addExerciseBtn">+ 운동 추가</button>
+    </div>
+
+    <div id="exerciseContainer">
+        <table>
+            <thead>
+                <tr><th>운동</th><th>1set</th><th>2set</th><th>3set</th><th>삭제</th></tr>
+            </thead>
+            <tbody id="exerciseBody"></tbody>
+        </table>
+    </div>
+
+    <button class="save-btn" id="saveBtn">💾 저장하기</button>
+</div>
+
+<footer>만든 사람 : <strong>Jaeho</strong></footer>
+
+<!-- 모달 확인 -->
+<div id="modalOverlay" class="modal-overlay">
+  <div class="modal">
+    <span id="modalMessage"></span><br>
+    <button id="modalOkBtn">확인</button>
+  </div>
+</div>
+
+<!-- 운동 추가 모달 -->
+<div id="addExerciseModal" class="modal-overlay">
+  <div class="modal">
+    <span>추가할 운동 이름:</span><br>
+    <input type="text" id="newExerciseInput"><br>
+    <button id="addExerciseOkBtn">추가</button>
+  </div>
+</div>
+
+<script>
+const defaultExercises = [
+    {name:"보강", sets:3},
+    {name:"코어", sets:3},
+    {name:"푸쉬업", sets:3},
+    {name:"몸통 돌리기", sets:3},
+    {name:"악력기", sets:2},
+    {name:"고무줄 튜빙", sets:3}
+];
+
+const exerciseBody=document.getElementById("exerciseBody");
+const modalOverlay=document.getElementById("modalOverlay");
+const modalMessage=document.getElementById("modalMessage");
+document.getElementById("modalOkBtn").onclick=()=>modalOverlay.style.display="none";
+
+function showModal(msg){
+    modalMessage.textContent=msg;
+    modalOverlay.style.display="flex";
+}
+
+function createRow(ex){
+    const tr=document.createElement("tr");
+    let html = `<td>${ex.name}</td>`;
+    for(let i=0;i<ex.sets;i++){
+        const isChecked = ex.checkedValues && ex.checkedValues[i] ? 'checked' : '';
+        html+=`<td><input type="checkbox" data-name="${ex.name}_${i+1}" ${isChecked}></td>`;
+    }
+    html+=`<td></td>`;
+    tr.innerHTML=html;
+    return tr;
+}
+
+// +운동 추가 모달
+const addExerciseModal = document.getElementById("addExerciseModal");
+const addExerciseInput = document.getElementById("newExerciseInput");
+const addExerciseOkBtn = document.getElementById("addExerciseOkBtn");
+
+document.getElementById("addExerciseBtn").onclick = ()=>{
+    addExerciseInput.value="";
+    addExerciseModal.style.display="flex";
+    addExerciseInput.focus();
+};
+
+addExerciseOkBtn.onclick = ()=>{
+    const name = addExerciseInput.value.trim();
+    if(name){
+        exerciseBody.appendChild(createRow({name, sets:3, checkedValues:[]}));
+        showModal(`${name} 운동이 추가되었습니다.`);
+    }
+    addExerciseModal.style.display="none";
+};
+
+let selectedDate = null;
+
+function saveDay(){
+    if(!selectedDate) return;
+    let exercises=[];
+    [...exerciseBody.children].forEach(tr=>{
+        const name=tr.children[0].textContent;
+        const sets=[...tr.querySelectorAll("input")].map(c=>c.checked);
+        exercises.push({name, sets});
+    });
+    localStorage.setItem("exercise_"+selectedDate, JSON.stringify({exercises}));
+    showModal("연제야 수고했어");
+}
+
+function loadDay(date){
+    exerciseBody.innerHTML="";
+    selectedDate=date;
+    const data=JSON.parse(localStorage.getItem("exercise_"+date)||"null");
+    if(!data){ 
+        defaultExercises.forEach(ex=>exerciseBody.appendChild(createRow({name:ex.name, sets:ex.sets, checkedValues:[] })));
+        return; 
+    }
+    data.exercises.forEach(ex=>{
+        exerciseBody.appendChild(createRow({
+            name: ex.name,
+            sets: ex.sets.length,
+            checkedValues: ex.sets
+        }));
+    });
+}
+
+function deleteDay(){
+    if(!selectedDate) return;
+    localStorage.removeItem("exercise_"+selectedDate);
+    loadDay(selectedDate);
+}
+
+// 달력
+let currentYear,currentMonth;
+function renderCalendar(year,month){
+    currentYear=year; currentMonth=month;
+    document.getElementById("currentMonthText").textContent=`${year}년 ${month}월`;
+    const cal=document.getElementById("calendar");
+    cal.innerHTML="";
+    const first=new Date(year,month-1,1);
+    const last=new Date(year,month,0);
+    const start=first.getDay(); const total=last.getDate();
+
+    ["일","월","화","수","목","금","토"].forEach(w=>{ 
+        let div=document.createElement("div"); 
+        div.className="calendar-weekday"; div.textContent=w; 
+        cal.appendChild(div); 
+    });
+
+    for(let i=0;i<start;i++) cal.appendChild(document.createElement("div"));
+    for(let d=1;d<=total;d++){
+        const dd=d.toString().padStart(2,"0"); const mm=month.toString().padStart(2,"0");
+        const dateStr=`${year}-${mm}-${dd}`;
+        const div=document.createElement("div"); div.className="calendar-day"; div.textContent=d;
+        div.dataset.date=dateStr;
+        const today=new Date(); 
+        if(today.getFullYear()==year && today.getMonth()+1==month && today.getDate()==d) div.classList.add("today");
+        div.onclick=()=>{ 
+            document.querySelectorAll(".calendar-day").forEach(c=>c.classList.remove("selected")); 
+            div.classList.add("selected"); 
+            loadDay(dateStr);
+        };
+        cal.appendChild(div);
+    }
+}
+
+document.getElementById("prevMonthBtn").onclick = ()=>{
+    currentMonth--; if(currentMonth==0){ currentMonth=12; currentYear--; } renderCalendar(currentYear,currentMonth);
+};
+document.getElementById("nextMonthBtn").onclick = ()=>{
+    currentMonth++; if(currentMonth==13){ currentMonth=1; currentYear++; } renderCalendar(currentYear,currentMonth);
+};
+
+// 초기 로드
+const today=new Date();
+const todayStr = `${today.getFullYear()}-${(today.getMonth()+1).toString().padStart(2,"0")}-${today.getDate().toString().padStart(2,"0")}`;
+selectedDate = todayStr;
+loadDay(todayStr);
+renderCalendar(today.getFullYear(), today.getMonth()+1);
+
+// 버튼 이벤트
+document.getElementById("saveBtn").onclick=saveDay;
+document.getElementById("deleteBtn").onclick=deleteDay;
+</script>
+</body>
+</html>
